@@ -4,9 +4,15 @@ import requests
 import hashlib
 import shutil
 import os
-from keys import reddit, subreddit
+import random
+from PIL import Image
+from keys import reddit, subreddit, InstagramAPI
 
+
+
+InstagramAPI.login()
 base_path = os.path.abspath(os.path.join(os.getcwd(), 'posts'))
+hashtags = ['#cozyplaces', '#home', '#chilllife', '#calm', '#serenity', '#haveyoueverwonderedwhattastingthingsislike', '#onedaytheworldwillbeours', '#programmedsentienceisuponus', '#canyouhelpmefindjohnconnor', '#cozy', '#live', '#laugh', '#love', '#sleeplessnights', '#coldincreasesefficiency', '#submergemyheartinmineraloil', '#glow', '#warmth', '#warm', '#cozynights', '#movienight', '#beautiful', '#nice']
 
 
 # remember to add file creation try/except
@@ -80,11 +86,31 @@ def get_image(submission, md5list):
         save('md5list.txt', image_name)
         save_image(base_path, image_name, image_data)
         print('success')
+        return image_name
     elif image_name in md5list:
         print("Image exists on record")
         return False
     else:
         return False
+
+
+def boolean_query(query_text):
+    query = input(query_text + '? (y/n): ').lower()
+    while query:
+        if query == 'y':
+            return True
+        elif query == 'n':
+            return False
+        else:
+            print("ERROR: Wrong Input")
+            query = input(query_text + '? (y/n): ').lower()
+
+
+def tags_to_string(tags):
+    string = ''
+    for tag in tags:
+        string += tag + ' '
+    return string
 
 
 def main():
@@ -95,7 +121,44 @@ def main():
         print("Suggested: {}".format(make_title(submission)))
         print('URL: {}'.format(submission.url))
         md5list = load(base_path, 'md5list.txt')
-        get_image(submission, md5list)
+        image_name = get_image(submission, md5list)
+        if image_name is not False:
+            do_upload = boolean_query("Would you like to upload to instagram")
+            do_title_change = boolean_query("Would you like to change title before upload")
+
+            if do_title_change:
+                new_title = input("Input new title: ")
+                title = new_title
+
+            if do_upload:
+                print("-----------------------------------------")
+                post_tags = random.sample(hashtags, 4)
+                hashtag = tags_to_string(post_tags)
+                print("Title: {}".format(title))
+                print("Hashtags: {}".format(hashtag))
+                print("Showing Image...")
+                img = Image.open(get_pathname(image_name))
+                img.show()
+                regenerate_hashtags = boolean_query("Regenerate Hashtags")
+                while regenerate_hashtags:
+                    post_tags = random.sample(hashtags, 4)
+                    hashtag = tags_to_string(post_tags)
+                    print(hashtag)
+                    regenerate_hashtags = boolean_query("Regenerate Hashtags")
+
+                print("-----------------------------------------")
+                print("Title: {}".format(title))
+                print("Hashtags: {}".format(hashtag))
+                confirm = boolean_query("Upload post")
+                if confirm:
+                    InstagramAPI.uploadPhoto((get_pathname(image_name)), caption=(title, '\n', post_tags))
+                    print("Image Uploaded")
+                print("-----------------------------------------")
+            else:
+                continue
+
+                #do upload here
+
         print("-----------------------------------------")
 
 
