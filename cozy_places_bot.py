@@ -1,21 +1,18 @@
 # coding=utf-8
-import praw
+
 import requests
 import hashlib
 import shutil
 import os
 import random
-from PIL import Image
-from keys import reddit, subreddit, InstagramAPI
+from PIL import Image, ImageOps
+from keys import subreddit, InstagramAPI
 
 
-
-InstagramAPI.login()
 base_path = os.path.abspath(os.path.join(os.getcwd(), 'posts'))
 hashtags = ['#cozyplaces', '#home', '#chilllife', '#calm', '#serenity', '#haveyoueverwonderedwhattastingthingsislike', '#onedaytheworldwillbeours', '#programmedsentienceisuponus', '#canyouhelpmefindjohnconnor', '#cozy', '#live', '#laugh', '#love', '#sleeplessnights', '#coldincreasesefficiency', '#submergemyheartinmineraloil', '#glow', '#warmth', '#warm', '#cozynights', '#movienight', '#beautiful', '#nice']
 
 
-# remember to add file creation try/except
 def load(path, name):
     list = []
     filename = get_pathname(name)
@@ -114,7 +111,7 @@ def tags_to_string(tags):
 
 
 def main():
-    for submission in subreddit.hot(limit = 10):
+    for submission in subreddit.hot(limit = 30):
         title = submission.title
         print("------------------------------------------")
         print('Original: {}'.format(title))
@@ -122,11 +119,12 @@ def main():
         print('URL: {}'.format(submission.url))
         md5list = load(base_path, 'md5list.txt')
         image_name = get_image(submission, md5list)
+
         if image_name is not False:
             do_upload = boolean_query("Would you like to upload to instagram")
             do_title_change = boolean_query("Would you like to change title before upload")
 
-            if do_title_change:
+            if do_title_change and do_upload:
                 new_title = input("Input new title: ")
                 title = new_title
 
@@ -138,7 +136,16 @@ def main():
                 print("Hashtags: {}".format(hashtag))
                 print("Showing Image...")
                 img = Image.open(get_pathname(image_name))
+                image_format = img.format
+                width = str(img.width)
+                height = str(img.height)
+                print("Size: {}x{}".format(width, height))
+                print("Resizing Image to 640x640...")
+                size = (510, 510)
+                img = ImageOps.fit(img, size, Image.ANTIALIAS)
                 img.show()
+                new_name = (title + '.' + image_format.lower())
+                img.save(get_pathname(new_name), format=image_format)
                 regenerate_hashtags = boolean_query("Regenerate Hashtags")
                 while regenerate_hashtags:
                     post_tags = random.sample(hashtags, 4)
@@ -151,16 +158,18 @@ def main():
                 print("Hashtags: {}".format(hashtag))
                 confirm = boolean_query("Upload post")
                 if confirm:
-                    InstagramAPI.uploadPhoto((get_pathname(image_name)), caption=(title, '\n', post_tags))
+                    post_caption = title + '\n' + hashtag
+                    InstagramAPI.uploadPhoto((get_pathname(new_name)), caption=post_caption)
                     print("Image Uploaded")
                 print("-----------------------------------------")
             else:
                 continue
 
-                #do upload here
-
         print("-----------------------------------------")
 
 
 if __name__ == '__main__':
-    main()
+    if InstagramAPI.login():
+        main()
+    else:
+        print("Cannot login to instagram")
