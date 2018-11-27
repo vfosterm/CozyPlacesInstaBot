@@ -67,10 +67,13 @@ def make_comments(submission):
 
 
 def is_image(url):
-    if ".jpg" or ".png" in url:
+    if (".jpg" or ".png") in url:
+        print("Link Valid")
         return True
     else:
+        print("Link invalid")
         return False
+
 
 
 def get_image(submission, md5list):
@@ -122,9 +125,12 @@ def main():
 
         if image_name is not False:
             do_upload = boolean_query("Would you like to upload to instagram")
-            do_title_change = boolean_query("Would you like to change title before upload")
+            do_title_change = False
 
-            if do_title_change and do_upload:
+            if do_upload:
+                do_title_change = boolean_query("Would you like to change title before upload")
+
+            if do_title_change:
                 new_title = input("Input new title: ")
                 title = new_title
 
